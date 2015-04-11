@@ -1,4 +1,3 @@
-#include "adc.h"
 #include <tsc_adc.h>
 #include <hw_tsc_adc_ss.h>
 # include <soc_AM335x.h>

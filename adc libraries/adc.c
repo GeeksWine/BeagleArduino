@@ -36,7 +36,7 @@ void adc_ctrl()
 	TSCADCStepIDTagConfig(TSC_ADC_INSTANCE, 1);
 	
 	/*power up the ADC module*/	
-	TSCADCSetADCPowerUp();
+	TSCADCSetADCPowerUp(TSC_ADC_INSTANCE);
 }
 
 
@@ -49,9 +49,30 @@ void adc_idle_config(unsigned int pin)
 		adcPositiveInp = TSCADC_POSITIVE_INP_CHANNEL1;
 	}
 	/* This enable the analog channel 1 */
-      TSCADCIdleStepConfig(ADC_Address,TSCADC_NEGATIVE_REF_ADCREFM,adcPositiveInp,TSCADC_NEGATIVE_INP_ADCREFRM,TSCADC_POSITIVE_REF_ADCREFP);
+ TSCADCIdleStepConfig(TSC_ADC_INSTANCE,TSCADC_NEGATIVE_REF_ADCREFM,adcPositiveInp,TSCADC_NEGATIVE_INP_ADCREFRM,TSCADC_POSITIVE_REF_ADCREFP);
 }
  
+
+/* enable or disable interrupt */
+void interrupt_enable(unsigned int enable)
+{
+	if (enable==1)
+	{
+		TSCADCEventInterruptEnable(TSC_ADC_INSTANCE, TSCADC_END_OF_SEQUENCE_INT);
+	}
+	else
+	{
+		TSCADCEventInterruptDisable(TSC_ADC_INSTANCE, TSCADC_END_OF_SEQUENCE_INT);
+	}
+}
+
+/*red interrupt status*/
+unsigned int interrupt_status()
+{
+	return(TSCADCIntStatusRead(TSC_ADC_INSTANCE, TSCADC_END_OF_SEQUENCE_INT));
+}
+
+
 /*reading data from ADC*/
 unsigned int adc_read()
 {
@@ -66,14 +87,22 @@ void adc_init(unsigned int pin)
 	adc_step_configure();
 	adc_ctrl();
 	adc_idle_config(unsigned int pin);
+	interrupt_enable(1); // enabling interrupt
 }
 
-
+void adc_exit(unsigned int pin)
+{
+	/* for SW one shot mode, after one sequence, automatically bits will be reset*/
+	interrupt_enable(0);
+	TSCADCSetADCPowerDown(TSC_ADC_INSTANCE); // power down the ADC
+}
 
 void main ()
 {
 	int pin =1;
 	int output; 
 	adc_init(pin);
+	while(interrupt_status()==1);
 	output = adc_read();
+	adc_exit(pin);
 }
